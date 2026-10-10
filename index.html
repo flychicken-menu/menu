@@ -681,6 +681,11 @@
             </div>
         </header>
 
+        <!-- تنبيه إغلاق المطعم اللحظي (يظهر فقط عند إغلاق المطعم من الكاشير) -->
+        <div id="store-closed-banner" style="display:none; background:rgba(255, 51, 85, 0.15); border:2px solid var(--neon-red); color:var(--neon-red); padding:11px 16px; margin:14px 18px 4px; border-radius:14px; text-align:center; font-weight:900; font-size:0.95rem; box-shadow:0 0 20px rgba(255,51,85,0.35); z-index:40;">
+            <i class="fas fa-store-slash" style="margin-left:6px;"></i> المطعم مغلق حالياً
+        </div>
+
         <main class="view-section active" id="view-categories">
             <div class="page-title"><span>المنيو</span> اختر القسم</div>
             <div class="grid-layout" id="categories-grid"></div>
@@ -1000,6 +1005,20 @@
             const popup = document.getElementById('delivery-scope-popup');
             popup.classList.remove('show');
         }
+
+        // الاستماع المباشر لحالة قفل / فتح المطعم من الكاشير
+        let isStoreOpen = true;
+        db.collection('settings').doc('store_status').onSnapshot((doc) => {
+            if (doc.exists && doc.data().isOpen !== undefined) {
+                isStoreOpen = doc.data().isOpen;
+            } else {
+                isStoreOpen = true;
+            }
+            const banner = document.getElementById('store-closed-banner');
+            if (banner) {
+                banner.style.display = isStoreOpen ? 'none' : 'block';
+            }
+        });
 
         // 1. الاستماع المباشر للشريط الإخباري من الكاشير
         db.collection('settings').doc('studio_design').onSnapshot((doc) => {
@@ -1458,6 +1477,10 @@
         }
 
         async function initiateOrderSubmission() {
+            if (!isStoreOpen) {
+                return showUIMotionToast('نعتذر منك، المطعم مغلق حالياً ولا يستقبل أي طلبات جديدة', 'fa-store-slash', 'var(--neon-red)');
+            }
+
             const name = document.getElementById('cust-name-input').value.trim();
             const phone = document.getElementById('cust-phone-input').value.trim();
             const address = document.getElementById('cust-address-input').value.trim();

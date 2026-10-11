@@ -803,13 +803,13 @@
                     <input type="tel" class="app-input" id="cust-sec-phone-input" placeholder="رقم بديل للطوارئ" dir="ltr">
                 </div>
                 <div class="form-group" id="address-field-wrap" style="display:none;">
-                    <label>تحديد موقع التوصيل بدقة *</label>
+                    <label>تحديد موقع التوصيل بدقة (GPS)</label>
                     <button type="button" class="btn-location-gps" id="btn-get-gps" onclick="fetchLiveLocation()">
                         <i class="fas fa-crosshairs"></i>
                         <span id="btn-gps-text">مشاركة موقعي الحالي عبر الـ GPS 📍</span>
                     </button>
-                    <label style="margin-top:6px;">تفاصيل العنوان (الحي، الشارع، البناء، الطابق)</label>
-                    <input type="text" class="app-input" id="cust-address-input" placeholder="مثال: صحنايا - جانب صيدلية الأمل - طابق 2">
+                    <label style="margin-top:8px; color:var(--primary); font-weight:900;">شرح وتفاصيل العنوان الكتابي (إلزامي) *</label>
+                    <input type="text" class="app-input" id="cust-address-input" placeholder="اكتب الشارع، البناء، الطابق، وأقرب نقطة دالة...">
                 </div>
             </div>
 
@@ -1197,7 +1197,8 @@
                         if (vol && vol.enabled) {
                             const isAchieved = qty >= vol.minQty;
                             const pct = Math.min(100, Math.round((qty / vol.minQty) * 100));
-                            promoTagHTML = `<div class="promo-tag-pill promo-tag-vol">${isAchieved ? '✓ تم الخصم!' : `اطلب ${vol.minQty} بسعر ${Number(vol.promoPrice).toLocaleString()}`}</div>`;
+                            const totalDealAmount = vol.minQty * vol.promoPrice;
+promoTagHTML = `<div class="promo-tag-pill promo-tag-vol">${isAchieved ? '✓ تم الخصم!' : `اطلب ${vol.minQty} بـ ${totalDealAmount.toLocaleString()} ل.س`}</div>`;
                             if (qty > 0) {
                                 promoProgressHTML = `
                                     <div class="promo-progress-wrap" title="${qty}/${vol.minQty}">
@@ -1487,32 +1488,16 @@
 
             if (!name || name.length < 3) return showUIMotionToast('يرجى إدخال الاسم كاملاً', 'fa-user', 'var(--neon-red)');
             if (!phone || phone.length < 9) return showUIMotionToast('يرجى إدخال رقم هاتف صالح', 'fa-phone', 'var(--neon-red)');
-            if (selectedOrderType === 'delivery' && !address && !liveLocationData) {
-                return showUIMotionToast('يرجى مشاركة موقع الـ GPS أو كتابة العنوان بالتفصيل', 'fa-map-pin', 'var(--primary)');
+
+            // إلزام الزبون بكتابة العنوان النصي بالتفصيل حتى لو شارك GPS
+            if (selectedOrderType === 'delivery' && (!address || address.length < 5)) {
+                return showUIMotionToast('يرجى كتابة شرح العنوان بالتفصيل (الشارع، البناء، الطابق)', 'fa-map-pin', 'var(--neon-red)');
             }
 
             saveCustomerInputs();
-            const cleanPhone = formatPhone(phone);
 
-            // 1. فحص التوثيق المحلي المحفوظ
-            if (localStorage.getItem('fc_verified_' + cleanPhone) === 'true' || (isPhoneVerified && verifiedPhoneNum === phone)) {
-                executeOrderPost();
-                return;
-            }
-
-            // 2. فحص مباشر لسجل الأرقام الموثقة بقاعدة بيانات الكاشير لتجاوز OTP
-            try {
-                const snap = await db.collection('verified_phones').doc(cleanPhone).get();
-                if (snap.exists) {
-                    isPhoneVerified = true;
-                    verifiedPhoneNum = phone;
-                    localStorage.setItem('fc_verified_' + cleanPhone, 'true');
-                    executeOrderPost();
-                    return;
-                }
-            } catch(e) {}
-
-            sendOtpRequest();
+            // إلغاء كود الـ OTP وإرسال الطلب مباشرة مع استمرار رسائل الواتساب بحالة الطلب
+            executeOrderPost();
         }
 
         async function sendOtpRequest() {

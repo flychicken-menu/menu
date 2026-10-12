@@ -1489,7 +1489,12 @@ promoTagHTML = `<div class="promo-tag-pill promo-tag-vol">${isAchieved ? '✓ ت
             if (!name || name.length < 3) return showUIMotionToast('يرجى إدخال الاسم كاملاً', 'fa-user', 'var(--neon-red)');
             if (!phone || phone.length < 9) return showUIMotionToast('يرجى إدخال رقم هاتف صالح', 'fa-phone', 'var(--neon-red)');
 
-            // إلزام الزبون بكتابة العنوان النصي بالتفصيل حتى لو شارك GPS
+            // 1. إلزام الزبون بسحب وتثبيت موقع الـ GPS عند التوصيل
+            if (selectedOrderType === 'delivery' && !liveLocationData) {
+                return showUIMotionToast('يجب تحديد وتثبيت موقعك عبر الـ GPS أولاً 📍', 'fa-crosshairs', 'var(--neon-red)');
+            }
+
+            // 2. إلزام الزبون بكتابة شرح وتفاصيل العنوان كتابياً
             if (selectedOrderType === 'delivery' && (!address || address.length < 5)) {
                 return showUIMotionToast('يرجى كتابة شرح العنوان بالتفصيل (الشارع، البناء، الطابق)', 'fa-map-pin', 'var(--neon-red)');
             }
@@ -1815,7 +1820,7 @@ promoTagHTML = `<div class="promo-tag-pill promo-tag-vol">${isAchieved ? '✓ ت
                     phone: phone,
                     orderType: 'استفسار مباشر',
                     total: 0,
-                    status: 'pending',
+                    status: 'inquiry',
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     messages: [{
                         id: 'msg_' + Date.now(),
@@ -1901,7 +1906,7 @@ promoTagHTML = `<div class="promo-tag-pill promo-tag-vol">${isAchieved ? '✓ ت
                     phone: document.getElementById('cust-phone-input')?.value.trim() || '',
                     orderType: 'استفسار مباشر',
                     total: 0,
-                    status: 'pending',
+                    status: 'inquiry',
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     messages: [newMsg],
                     lastMessageAt: firebase.firestore.FieldValue.serverTimestamp()
